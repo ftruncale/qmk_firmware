@@ -4,10 +4,6 @@
 
 #define FORCE_NKRO
 
-#ifdef RGBLIGHT_ENABLE
-#include "rgblight.h"
-#endif
-
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_DEFAULT] = LAYOUT_60_ansi(
         KC_ESC,     KC_1,       KC_2,       KC_3,       KC_4,    KC_5,      KC_6,       KC_7,       KC_8,       KC_9,       KC_0,       KC_MINS,        KC_EQL,     KC_BSPC,
@@ -35,7 +31,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // }, {
 
 
-// Indices do NOT have to be listed in ascending order for this to work, I just thought it looked nice.
+//arrays of keys to choose, defined above by the manufacturer
 int DEFAULT_A[] = { 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,
                 26, 25, 24, 23, 22, 21, 20, 19, 18, 17,
                40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 44, 43, 42,
@@ -49,20 +45,23 @@ int MEDIA_ALPHA[] = {17, 19, 53, 54, 55, 41, 0, 28, 14, 49};
 int F_ROW[] = {13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
 
 
-// Find sizes of the arrays using a method described here: https://www.geeksforgeeks.org/how-to-find-size-of-array-in-cc-without-using-sizeof-operator/
+//Get sizes of the arrays, lazy shorthand
 int DEFAULT_A_SIZE = *(&DEFAULT_A + 1) - DEFAULT_A;
 int DEFAULT_B_SIZE = *(&DEFAULT_B + 1) - DEFAULT_B;
 
 int MEDIA_ALPHA_SIZE = *(&MEDIA_ALPHA + 1) - MEDIA_ALPHA;
 int F_ROW_SIZE = *(&F_ROW + 1) - F_ROW;
 
-//define colors by RGB values
+//define colors by RGB values. manually adjusted for dz60rgb-ansi v1's purple pcb
 static int BRIGHT_GREEN[] = {0, 255, 0};
 static int PASTEL_GREEN[] = {30, 255, 30};
 static int BRIGHT_PURPLE[] = {255, 0, 255};
-static int WHITE[] = {76.5, 255, 76.5};
+// static int WHITE[] = {76.5, 255, 76.5};
+static int WHITE2[] = {255, 255, 255};
 static int BRIGHT_TEAL[] = {10, 255, 255};
+static int BLACK[] = {0, 0, 0};
 
+bool disable_rgb = 0;
 
 // These shorthands are used below to set led colors on each matrix cycle
 void loop_colorset(int *indices, int array_size, int* rgb) {
@@ -73,19 +72,22 @@ void loop_colorset(int *indices, int array_size, int* rgb) {
 
 // Code to change some led colors on layer change, using the above function
 void rgb_matrix_indicators_user(void) {
+  if (disable_rgb){loop_colorset(DEFAULT_A, DEFAULT_A_SIZE, BLACK);loop_colorset(DEFAULT_B, DEFAULT_B_SIZE, BLACK);}
+  else {
   switch (biton32(layer_state)) {
-    case _DEFAULT:
-      loop_colorset(DEFAULT_A, DEFAULT_A_SIZE, WHITE);  // set alpha layer
-      loop_colorset(DEFAULT_B, DEFAULT_B_SIZE, PASTEL_GREEN);  // Set modifiers
+      case _DEFAULT:
+        loop_colorset(DEFAULT_A, DEFAULT_A_SIZE, WHITE2);  // set alpha layer
+        loop_colorset(DEFAULT_B, DEFAULT_B_SIZE, PASTEL_GREEN);  // Set modifiers
+        break;
+      case _MEDIA:
+        rgb_matrix_set_color_all(WHITE2[0], WHITE2[1], WHITE2[2]);
+        loop_colorset(MEDIA_ALPHA, MEDIA_ALPHA_SIZE, BRIGHT_GREEN);
+        loop_colorset(F_ROW, F_ROW_SIZE, BRIGHT_TEAL);
+        break;
+      default:
+        loop_colorset(DEFAULT_A, DEFAULT_A_SIZE, PASTEL_GREEN);
+        loop_colorset(DEFAULT_B, DEFAULT_B_SIZE, BRIGHT_PURPLE);
       break;
-    case _MEDIA:
-      rgb_matrix_set_color_all(WHITE[0], WHITE[1], WHITE[2]);
-      loop_colorset(MEDIA_ALPHA, MEDIA_ALPHA_SIZE, BRIGHT_GREEN);
-      loop_colorset(F_ROW, F_ROW_SIZE, BRIGHT_TEAL);
-      break;
-    default:
-      loop_colorset(DEFAULT_A, DEFAULT_A_SIZE, PASTEL_GREEN);
-      loop_colorset(DEFAULT_B, DEFAULT_B_SIZE, BRIGHT_PURPLE);
-    break;
+    }
   }
 }
